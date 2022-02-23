@@ -1,0 +1,113 @@
+<div class="layui-fluid">
+	<div class="layui-row">
+		<div class="layui-col-xs12">
+			<div class="layui-card">
+				<div class="layui-card-header">站内新闻管理</div>
+				<div class="layui-card-body newsList">
+					<div class="layui-row">
+						<div class="layui-inline">
+							<label class="layui-form-label">标题</label>
+							<div class="layui-inline">
+								<input type="text" class="layui-input" id="titleQuery" name="titleQuery">
+							</div>
+							<button v-on:click="loadData" class="layui-btn layui-btn-normal">查询</button>
+						</div>
+					</div>
+					<table class="layui-table">
+						<thead>
+							<tr>
+								<th>ID</th>
+								<th>标题</th>
+								<th>作者</th>
+								<th>发布时间</th>
+								<th>操作</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr v-for="item in dataSource">
+								<td>{{item.id}}</td>
+								<td>{{item.title}}</td>
+								<td>{{item.author}}</td>
+								<td>{{item.publishdate}}</td>
+								<td>
+									<button v-on:click="modifyData" data-id="{{item.id}}" class="layui-btn layui-btn-normal" >修改</button>
+									<button v-on:click="removeData" data-id="{{item.id}}" class="layui-btn layui-btn-danger" >移除</button>		
+								</td>
+							</tr>
+						</tbody>
+					</table>
+					<div id="laypageDemo"></div>
+				</div>
+				
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+var $ = layui.jquery;
+var vm = new Vue({
+	el: '.newsList',	//生效范围
+	data:{
+		dataSource: []
+	},
+	methods: {
+		//查询所有新闻
+		loadData:function(page,rows){
+			var title = $("#titleQuery").val();
+			page = page?page:1;
+			rows = rows?rows:5;
+			this.$http({
+				url:'news/list.do',
+				data:{
+					title:title,
+					page:page,
+					rows:rows
+				}
+			}).then(function(res){
+				var data = res.data;
+				vm.dataSource = data.rows;
+				layui.use('laypage',function(){ //laypage插件实现分页功能
+					var laypage = layui.laypage;
+					laypage.render({
+						elem:'laypageDemo',
+						count:data.total,
+						limit:rows,
+						curr:page,
+						jump:function(obj,first){
+							//首次不执行
+							if(!first){
+								vm.loadData(obj.curr,obj.limit);
+							}
+						}
+					})
+				});
+			});
+		},
+		
+		//删除一个新闻
+		removeData:function(e){
+			if(!confirm("您确定要删除该新闻吗？")){
+				return;
+			}
+			this.$http({
+				url:'news/delete.do?id='+e.target.dataset.id,
+						data:{}
+			}).then(function(res){
+				var data = res.data;
+				if(data.code!=0){
+					alert(data.errMsg);
+					return;
+				}
+				alert("删除成功！");
+				location.reload();
+			});
+		},
+		//修改一个新闻
+		modifyData:function(e){
+			location.href = '/#/news/add?/id='+e.target.dataset.id;
+		}
+	}
+});
+vm.loadData();
+</script>

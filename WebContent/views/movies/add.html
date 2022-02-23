@@ -1,0 +1,174 @@
+<div class="layui-fluid">
+	<div class="layui-row">
+		<div class="layui-col-xs12">
+			<div class="layui-card">
+				<div class="layui-card-header">电影信息</div>
+				<div class="layui-card-div movieadd">
+					<form class="layui-form">
+						<div class="layui-form-item">
+							<label class="layui-form-label">电影名称</label>
+							<div class="layui-input-block">
+								<input type="text" name="moviename" class="layui-input">
+							</div>
+						</div>
+						<div class="layui-form-item">
+							<label class="layui-form-label">电影简介</label>
+							<div class="layui-input-block">
+								<input type="text" name="description" class="layui-input">
+							</div>
+						</div>
+						<div class="layui-form-item">
+							<label class="layui-form-label">封面图片</label>
+							<div class="layui-input-block">
+								<input type="text" name="imgpath" class="layui-input">
+								<button v-on:click="openDialog" style="position: absolute;top: 0;right: 6px;cursor: pointer;" type="button" class="layui-btn">上传</button>
+							</div>
+						</div>
+						<div class="layui-form-item">
+							<label class="layui-form-label">票价</label>
+							<div class="layui-input-block">
+								<input type="text" name="ticketprice" class="layui-input">
+							</div>
+						</div>
+						<div class="layui-form-item">
+							<label class="layui-form-label">导演</label>
+							<div class="layui-input-block">
+								<input type="text" name="director" class="layui-input">
+							</div>
+						</div>
+						<div class="layui-form-item">
+							<label class="layui-form-label">时长</label>
+							<div class="layui-input-block">
+								<input type="text" name="time" class="layui-input">
+							</div>
+						</div>
+						<div class="layui-form-item">
+							<label class="layui-form-label">语言</label>
+							<div class="layui-input-block">
+								<select name="language">
+									<option value="中文">中文</option>
+									<option value="英语">英语</option>
+									<option value="日语">日语</option>
+									<option value="法语">法语</option>
+									<option value="粤语">粤语</option>
+								</select>
+							</div>
+						</div>
+						<div class="layui-form-item">
+							<label class="layui-form-label">首映日期</label>
+							<div class="layui-input-block">
+								<input type="text" name="publishdate" class="layui-input">
+							</div>
+						</div>
+						<div class="layui-form-item">
+							<label class="layui-form-label">票房(万)</label>
+							<div class="layui-input-block">
+								<input type="number" name="boxoffice" class="layui-input">
+							</div>
+						</div>
+						<div style="color: red;text-align: center;">{{errMsg}}</div>
+						<div class="layui-form-item">
+							<div class="layui-input-block" style="text-align: center;">
+								<button type="button" class="layui-btn" v-on:click="ajaxSubmit">提交</button>
+								<button type="button" class="layui-btn" v-on:click="back">返回</button>
+							</div>
+						</div>
+					
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+layui.use(['form','jquery'],function(){
+	var form = layui.form;
+	form.render();
+});
+var $ = layui.jquery;
+var layer = layui.layer;
+var movieAdd = new Vue({
+	el: '.movieadd',
+	data: {
+		errMsg:''
+	},
+	methods:{
+		//如果是修改，需要加载当前数据
+		loadData:function(){
+			window.id = layui.router().search.id;
+			if(!id) return;
+			$.post("/movies/getById.do",{id:id},function(data){
+				$("input[name='moviename']").val(data.moviename);
+				$("input[name='description']").val(data.description);
+				$("input[name='imgpath']").val(data.imgpath);
+				$("input[name='ticketprice']").val(data.ticketprice);
+				$("input[name='director']").val(data.director);
+				$("input[name='time']").val(data.time);
+				$("select[name='language']").next().find('.layui-input').eq(0).val(data.language);
+				$("input[name='publishdate']").val(data.publishdate);
+				$("input[name='boxoffice']").val(data.boxoffice);
+			},'json');
+		},
+		
+		//提交
+		ajaxSubmit: function(){
+			var obj = {}
+			if(!$("input[name='moviename']").val()){
+				this.errMsg = '电影名称不允许为空！';
+				return;
+			}
+			/* obj是movies对象 */
+			obj.moviename = $("input[name='moviename']").val();
+			obj.description = $("input[name='description']").val();
+			obj.imgpath = $("input[name='imgpath']").val();
+			obj.ticketprice = $("input[name='ticketprice']").val();
+			obj.director = $("input[name='director']").val();
+			obj.time = $("input[name='time']").val();
+			obj.language = $("select[name='language']").next().find('.layui-input').eq(0).val();
+			obj.publishdate = $("input[name='publishdate']").val();
+			obj.boxoffice = $("input[name='boxoffice']").val();
+			if(window.id){
+				obj.id = window.id;
+			}
+			$.ajax({
+				url:'/movies/add.do',
+				type:'POST',
+				data:obj,
+				dataType:'JSON',
+				aysyn:'true',	//是否异步
+				success:function(data){
+					if(data.code!=0){
+						alert("保存失败！");
+						return;
+					}
+					alert("保存成功！");
+					location.href="/#/movies/query";
+				}
+			});
+		},
+		back: function(){
+			location.href="/#/movies/query";
+		},
+		openDialog:function(){
+			layer.open({
+				title: '上传图片',
+				area:['400px','300px'],
+				shade:0,
+				type:1,
+				content:"<iframe style='width:100%;height:90%;border:0' src='/views/movies/file.html'></iframe>"
+			});
+		}
+	}
+});
+movieAdd.loadData();
+//给图片设置内容
+function setImg(img){
+	$("input[name='imgpath']").val(img);
+}
+
+
+</script>
+
+
+
